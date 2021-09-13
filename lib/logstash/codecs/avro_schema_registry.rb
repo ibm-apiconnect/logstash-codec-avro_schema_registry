@@ -119,6 +119,7 @@ class LogStash::Codecs::AvroSchemaRegistry < LogStash::Codecs::Base
   config :endpoint, :validate => :string, :required => true
   config :username, :validate => :string, :default => nil
   config :password, :validate => :string, :default => nil
+  config :flavour, :validate => :string, :default => "confluent"
 
   config :schema_id, :validate => :number, :default => nil
   config :subject_name, :validate => :string, :default => nil
@@ -141,14 +142,14 @@ class LogStash::Codecs::AvroSchemaRegistry < LogStash::Codecs::Base
   public
   def register
     @client = if client_certificate != nil
-      SchemaRegistry::Client.new(endpoint, username, password, SchemaRegistry::Client.connection_options(
+      SchemaRegistry::Client.new(endpoint, username, password, flavour, SchemaRegistry::Client.connection_options(
         client_certificate: client_certificate,
         client_key: client_key,
         ca_certificate: ca_certificate,
         verify_mode: verify_mode
       ))
     else
-      SchemaRegistry::Client.new(endpoint, username, password)
+      SchemaRegistry::Client.new(endpoint, username, password, flavour)
     end
 
     @schemas = Hash.new
@@ -157,7 +158,8 @@ class LogStash::Codecs::AvroSchemaRegistry < LogStash::Codecs::Base
 
   def get_schema(schema_id)
     unless @schemas.has_key?(schema_id)
-      @schemas[schema_id] = Avro::Schema.parse(@client.schema(schema_id))
+      schema_hash = @client.schema(schema_id)
+      @schemas[schema_id] = Avro::Schema.real_parse(schema_hash)
     end
     @schemas[schema_id]
   end
