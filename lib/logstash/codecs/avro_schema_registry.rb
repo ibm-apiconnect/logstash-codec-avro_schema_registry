@@ -129,6 +129,7 @@ class LogStash::Codecs::AvroSchemaRegistry < LogStash::Codecs::Base
   config :register_schema, :validate => :boolean, :default => false
   config :binary_encoded, :validate => :boolean, :default => false
   config :base64_encoded, :validate => :boolean, :default => false
+  config :apicurio_schema_registry => :boolean, :default => false
 
   # tag events with `_avroparsefailure` when decode fails
   config :tag_on_failure, :validate => :boolean, :default => false
@@ -157,7 +158,11 @@ class LogStash::Codecs::AvroSchemaRegistry < LogStash::Codecs::Base
 
   def get_schema(schema_id)
     unless @schemas.has_key?(schema_id)
-      @schemas[schema_id] = Avro::Schema.parse(@client.schema(schema_id))
+      if apicurio_schema_registry
+        @schemas[schema_id] = Avro::Schema.parse(@client.apicurio_schema(schema_id))
+      else
+        @schemas[schema_id] = Avro::Schema.parse(@client.schema(schema_id))
+      end
     end
     @schemas[schema_id]
   end
