@@ -154,6 +154,10 @@ class LogStash::Codecs::AvroSchemaRegistry < LogStash::Codecs::Base
 
     @schemas = Hash.new
     @write_schema_id = nil
+    if !["confluent", "apicurio"].include? flavour
+      raise ArgumentError, "flavour must be one of 'confluent' or 'apicurio'"
+    end
+    @flavour = flavour
   end
 
   def get_schema(schema_id)
@@ -251,7 +255,13 @@ class LogStash::Codecs::AvroSchemaRegistry < LogStash::Codecs::Base
     dw = Avro::IO::DatumWriter.new(schema)
     buffer = StringIO.new
     buffer.write(MAGIC_BYTE.chr)
-    buffer.write([@write_schema_id].pack("I>"))
+    if @flavour == "apicurio":
+      #Apicurio uses 8 bytes (by default but could be 4 still so TODO)
+      buffer.write([@write_schema_id].pack("Q>"))
+    else
+      #Confluent uses 4 bytes
+      buffer.write([@write_schema_id].pack("I>"))
+    end
     encoder = Avro::IO::BinaryEncoder.new(buffer)
     dw.write(clean_event(event), encoder)
     if @binary_encoded
