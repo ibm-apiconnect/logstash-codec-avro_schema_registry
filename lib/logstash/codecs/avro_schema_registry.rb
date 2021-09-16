@@ -255,7 +255,7 @@ class LogStash::Codecs::AvroSchemaRegistry < LogStash::Codecs::Base
     dw = Avro::IO::DatumWriter.new(schema)
     buffer = StringIO.new
     buffer.write(MAGIC_BYTE.chr)
-    if @flavour == "apicurio":
+    if @flavour == "apicurio"
       #Apicurio uses 8 bytes (by default but could be 4 still so TODO)
       buffer.write([@write_schema_id].pack("Q>"))
     else
